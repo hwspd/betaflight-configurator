@@ -839,6 +839,9 @@
     "stm32UnprotectInitFailed": {
         "message": "Failed to initiate unprotect routine"
     },
+    "gd32HighProtection": {
+        "message": "GD32 high read protection is irreversible and cannot be removed. Aborting."
+    },
     "noConfigurationReceived": {
         "message": "No configuration received within <span class=\"message-negative\">10 seconds</span>, communication <span class=\"message-negative\">failed</span>"
     },
