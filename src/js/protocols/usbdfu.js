@@ -28,6 +28,14 @@ import WebUsbDfuTransport from "./WebUsbDfuTransport";
 // Error constant used when an already-authorized DFU device isn't found
 export const DFU_AUTH_REQUIRED = "DFU_AUTH_REQUIRED";
 
+const GD32_DFU_VENDOR_ID = 0x28e9;
+const GD32_DFU_PRODUCT_ID = 0x0189;
+const GD32_OPTION_BYTES_DESCRIPTOR_ADDRESS = 0x1ffff800;
+const GD32_OPTION_BYTES_ADDRESS = 0x1fffc000;
+const GD32_SPC_OFFSET = 1;
+const GD32_SPC_UNPROTECTED = 0xaa;
+const GD32_SPC_HIGH_PROTECTION = 0xcc;
+
 export class DFUAuthRequiredError extends Error {
     constructor() {
         super(DFU_AUTH_REQUIRED);
@@ -221,6 +229,14 @@ export class UsbDfuProtocol extends EventTarget {
 
     flashProgress(progress) {
         this.options?.flashProgress?.(progress);
+    }
+
+    /** @returns {boolean} Whether the connected device is the GD32 ROM DFU bootloader. */
+    isGd32DfuDevice() {
+        return (
+            this.connectedDevice?.vendorId === GD32_DFU_VENDOR_ID &&
+            this.connectedDevice?.productId === GD32_DFU_PRODUCT_ID
+        );
     }
 
     openDevice() {
@@ -852,6 +868,10 @@ export class UsbDfuProtocol extends EventTarget {
                                                     );
                                                     gui_log(i18n.getMessage("stm32UnprotectSuccessful"));
 
+                                                    // Release the disconnected device and restore the UI before
+                                                    // replacing the pre-flash message with the reconnect instruction.
+                                                    this.cleanup();
+
                                                     const messageUnprotectUnplug =
                                                         i18n.getMessage("stm32UnprotectUnplug");
                                                     gui_log(messageUnprotectUnplug);
@@ -917,6 +937,31 @@ export class UsbDfuProtocol extends EventTarget {
                                     ob_data.length === this.chipInfo.option_bytes.total_size
                                 ) {
                                     console.log(`${this.logHead} Option bytes read successfully`);
+
+                                    if (this.isGd32DfuDevice()) {
+                                        const spc = ob_data[GD32_SPC_OFFSET];
+                                        console.log(
+                                            `${this.logHead} GD32 security protection code: 0x${spc.toString(16)}`,
+                                        );
+
+                                        if (spc === GD32_SPC_HIGH_PROTECTION) {
+                                            const messageHighProtection = i18n.getMessage("gd32HighProtection");
+                                            gui_log(messageHighProtection);
+                                            this.cleanup();
+                                            this.flashingMessage(
+                                                messageHighProtection,
+                                                this.options?.flashMessageTypes?.INVALID,
+                                            );
+                                            return;
+                                        }
+
+                                        if (spc !== GD32_SPC_UNPROTECTED) {
+                                            console.log(`${this.logHead} GD32 low read protection is active`);
+                                            this.clearStatus(unprotect);
+                                            return;
+                                        }
+                                    }
+
                                     console.log(`${this.logHead} Chip does not appear read protected`);
                                     gui_log(i18n.getMessage("stm32NotReadProtected"));
                                     // it is pretty safe to continue to erase flash
@@ -956,7 +1001,11 @@ export class UsbDfuProtocol extends EventTarget {
 
                 this.clearStatus(() => {
                     // load address fails if read protection is active unlike as stated in the docs
-                    this.loadAddress(this.chipInfo.option_bytes.start_address, initReadOB, false);
+                    let optionBytesAddress = this.chipInfo.option_bytes.start_address;
+                    if (this.isGd32DfuDevice() && optionBytesAddress === GD32_OPTION_BYTES_DESCRIPTOR_ADDRESS) {
+                        optionBytesAddress = GD32_OPTION_BYTES_ADDRESS;
+                    }
+                    this.loadAddress(optionBytesAddress, initReadOB, false);
                 });
                 break;
             }
@@ -1344,9 +1393,9 @@ export class UsbDfuProtocol extends EventTarget {
 
         console.log(`${this.logHead} Script finished after: ${timeSpent / 1000} seconds`);
 
-        if (this.callback) {
-            this.callback();
-        }
+        const callback = this.callback;
+        this.callback = null;
+        callback?.();
     }
 }
 

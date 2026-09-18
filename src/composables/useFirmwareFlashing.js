@@ -298,7 +298,7 @@ export function useFirmwareFlashing(params = {}) {
             tracking.sendEvent(tracking.EVENT_CATEGORIES.FLASHING, "DFU Flashing", {
                 filename: filename || null,
             });
-            DeviceHandler.dfuProtocol.connect(port, firmware, flashing_options);
+            DeviceHandler.dfuProtocol.connect(port, firmware, flashing_options, resetFlashingState);
         } else if (isSerial) {
             if (noRebootSequence) {
                 flashing_options.no_reboot = true;
@@ -322,7 +322,7 @@ export function useFirmwareFlashing(params = {}) {
             DeviceHandler.dfuProtocol
                 .requestPermission()
                 .then((device) => {
-                    DeviceHandler.dfuProtocol.connect(device.path, firmware, flashing_options);
+                    DeviceHandler.dfuProtocol.connect(device.path, firmware, flashing_options, resetFlashingState);
                 })
                 .catch((error) => {
                     console.error("Permission request failed", error);
@@ -637,7 +637,7 @@ export function useFirmwareFlashing(params = {}) {
         const onDeviceRemoved = async (devicePath) => {
             console.log(`${logHead} Device removed:`, devicePath);
 
-            if (GUI.connect_lock || STM32.rebootMode) {
+            if (GUI.connect_lock || GUI.flashingInProgress || STM32.rebootMode) {
                 return;
             }
 
