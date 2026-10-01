@@ -46,14 +46,14 @@
     </BaseTab>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { nextTick, onActivated, onDeactivated, onMounted, onBeforeUnmount, provide, ref, watch } from "vue";
 import BaseTab from "./BaseTab.vue";
 import GUI from "../../js/gui";
 import BlackboxViewerApp from "../../blackbox-viewer/App.vue";
 import { bootstrapViewer } from "../../blackbox-viewer/main.js";
 import { setBlackboxViewerDark, setViewerActive } from "../../blackbox-viewer/vue_init.js";
-import { useGraphStore } from "../../blackbox-viewer/stores/graph.js";
+import { useGraphStore } from "../../blackbox-viewer/stores/graph";
 import { useDataflashPull } from "../../composables/useDataflashPull";
 
 // Named so <keep-alive :include> in App.vue can target this tab (and only this tab) for caching.
@@ -61,8 +61,8 @@ defineOptions({ name: "BlackboxViewerTab" });
 
 const rootRef = ref(null);
 const viewerReady = ref(false);
-let themeObserver = null;
-let teardownViewer = null;
+let themeObserver: MutationObserver | null = null;
+let teardownViewer: (() => void) | null = null;
 const dataflash = useDataflashPull();
 const graphStore = useGraphStore();
 
@@ -72,7 +72,7 @@ const graphStore = useGraphStore();
 // the host document — the layout state stays on the viewer root (see App.vue).
 const FULLSCREEN_BODY_CLASS = "blackbox-viewer-fullscreen";
 
-function markHostFullscreen(on) {
+function markHostFullscreen(on: boolean) {
     document.body.classList.toggle(FULLSCREEN_BODY_CLASS, on);
 }
 

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { computed } from "vue";
 
 // ---------------------------------------------------------------------------
-// device_handler.js pulls in ConfigStorage, the serial facade, the DFU protocol,
+// device_handler pulls in ConfigStorage, the serial facade, the DFU protocol,
 // the EventBus and compatibility probes. We mock each so the singleton loads in
 // isolation and we can exercise selectActivePort() directly.
 //
@@ -93,6 +93,7 @@ vi.mock("../../src/js/utils/checkCompatibility.js", () => ({
     checkSerialSupport: () => true,
     checkUsbSupport: () => true,
     isAndroid: () => false,
+    isNetworkOnlyBrowser: () => false,
     isTauri: () => true,
     isTauriAndroid: () => false,
 }));
@@ -392,6 +393,7 @@ describe("createDfuProtocol routing", () => {
             checkSerialSupport: () => true,
             checkUsbSupport: () => true,
             isAndroid: () => false,
+            isNetworkOnlyBrowser: () => false,
             isTauri: () => true,
             isTauriAndroid: () => true,
         }));

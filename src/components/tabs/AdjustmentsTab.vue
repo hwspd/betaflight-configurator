@@ -71,7 +71,8 @@
                                         v-if="rcChannelData[adjustment.auxChannelIndex] !== undefined"
                                         class="marker"
                                         :style="{
-                                            left: channelPercent(rcChannelData[adjustment.auxChannelIndex]) + '%',
+                                            insetInlineStart:
+                                                channelPercent(rcChannelData[adjustment.auxChannelIndex]) + '%',
                                         }"
                                     ></div>
                                 </div>
@@ -159,7 +160,7 @@
     </BaseTab>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, nextTick } from "vue";
 import BaseTab from "./BaseTab.vue";
 import WikiButton from "../elements/WikiButton.vue";
@@ -295,6 +296,8 @@ onMounted(async () => {
     min-width: 0;
 }
 
+/* The slider is mirrored in RTL, so the marker rides the inline axis and its centering
+   shift has to be flipped by hand: translate is always physical. */
 .marker {
     position: absolute;
     top: 50%;
@@ -305,6 +308,10 @@ onMounted(async () => {
     z-index: 3;
     pointer-events: none;
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+html[dir="rtl"] .marker {
+    transform: translate(50%, -50%);
 }
 
 .mode-badge {

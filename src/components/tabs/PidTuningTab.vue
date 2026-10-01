@@ -120,7 +120,7 @@
     </BaseTab>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { useIsMounted } from "@/composables/useIsMounted";
 import { usePidTuningStore } from "@/stores/pidTuning";
@@ -133,7 +133,7 @@ import SettingRow from "../elements/SettingRow.vue";
 import SubtabNav from "@/components/elements/SubtabNav.vue";
 import GUI from "@/js/gui";
 import MSP from "@/js/msp";
-import MSPCodes from "@/js/msp/MSPCodes";
+import MSPCodes, { MSP2TextType } from "@/js/msp/MSPCodes";
 import FC from "@/js/fc";
 import { i18n } from "@/js/localization";
 import { validateTuningSliders } from "@/composables/useTuningSliders";
@@ -148,6 +148,12 @@ import { gui_log } from "@/js/gui_log";
 import { useSaving } from "@/composables/useSaving";
 import { useReboot } from "@/composables/useReboot";
 import { runTabLoad } from "@/composables/useTabLoad";
+
+/** What CopyProfileDialog confirms with: the selected target profile and/or rate profile. */
+interface CopyProfileSelection {
+    profile: number | null;
+    rateProfile: number | null;
+}
 
 const { t } = useTranslation();
 const pidTuningStore = usePidTuningStore();
@@ -164,8 +170,8 @@ const isMounted = useIsMounted();
 // Guards for the TX-driven profile sync (see watchers below).
 const isLoading = ref(false);
 let syncingFromFc = false;
-const pidSubTab = ref(null);
-const filterSubTab = ref(null);
+const pidSubTab = ref<InstanceType<typeof PidSubTab> | null>(null);
+const filterSubTab = ref<InstanceType<typeof FilterSubTab> | null>(null);
 const ratesSubTab = ref(null);
 
 // Profile count — matches original loadProfilesList() logic
@@ -256,11 +262,11 @@ async function loadData() {
                 if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_45)) {
                     await MSP.promise(
                         MSPCodes.MSP2_GET_TEXT,
-                        mspHelper.crunch(MSPCodes.MSP2_GET_TEXT, MSPCodes.PID_PROFILE_NAME),
+                        mspHelper.crunch(MSPCodes.MSP2_GET_TEXT, MSP2TextType.PID_PROFILE_NAME),
                     );
                     await MSP.promise(
                         MSPCodes.MSP2_GET_TEXT,
-                        mspHelper.crunch(MSPCodes.MSP2_GET_TEXT, MSPCodes.RATE_PROFILE_NAME),
+                        mspHelper.crunch(MSPCodes.MSP2_GET_TEXT, MSP2TextType.RATE_PROFILE_NAME),
                     );
                 }
 
@@ -371,7 +377,7 @@ async function copyProfile() {
         t("dialogCopyProfileNote"),
         options,
         [],
-        async (selected) => {
+        async (selected: CopyProfileSelection | null) => {
             // selected: { profile, rateProfile }
             if (selected && typeof selected.profile === "number") {
                 const targetProfile = selected.profile;
@@ -419,7 +425,7 @@ async function copyRateProfile() {
         t("dialogCopyProfileNote"),
         [],
         options,
-        async (selected) => {
+        async (selected: CopyProfileSelection | null) => {
             if (selected && typeof selected.rateProfile === "number") {
                 const targetProfile = selected.rateProfile;
 
@@ -508,13 +514,13 @@ function save() {
             if (FC.CONFIG.pidProfileNames) {
                 await MSP.promise(
                     MSPCodes.MSP2_SET_TEXT,
-                    mspHelper.crunch(MSPCodes.MSP2_SET_TEXT, MSPCodes.PID_PROFILE_NAME),
+                    mspHelper.crunch(MSPCodes.MSP2_SET_TEXT, MSP2TextType.PID_PROFILE_NAME),
                 );
             }
             if (FC.CONFIG.rateProfileNames) {
                 await MSP.promise(
                     MSPCodes.MSP2_SET_TEXT,
-                    mspHelper.crunch(MSPCodes.MSP2_SET_TEXT, MSPCodes.RATE_PROFILE_NAME),
+                    mspHelper.crunch(MSPCodes.MSP2_SET_TEXT, MSP2TextType.RATE_PROFILE_NAME),
                 );
             }
         }
@@ -582,7 +588,7 @@ watch(
 // can therefore change the active profile out from under the UI. Reflect that here and
 // reload — but never clobber unsaved edits or interrupt an in-flight load. Restores the
 // checkUpdateProfile() behaviour lost in the Vue migration (issue #5230).
-async function syncProfileFromFc(kind) {
+async function syncProfileFromFc(kind: "profile" | "rate") {
     // Skip while loading, while our own change is applying, or when values have been edited
     // (an in-progress edit takes precedence over a switch flip, matching legacy behaviour).
     // A pending profile switch must not block this, or the selector would stay stuck on the
@@ -630,7 +636,7 @@ watch(
 );
 
 // Cleanup callback - called from gui.js tab_switch_cleanup when switching away from this tab
-function cleanup(callback) {
+function cleanup(callback?: () => void) {
     // Any cleanup needed before unmounting
     // Call the callback to signal cleanup is complete
     if (callback) {

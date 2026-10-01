@@ -1,6 +1,6 @@
 import { isAndroid, isTauriDesktop } from "./utils/checkCompatibility";
 import CapacitorFile from "./protocols/CapacitorFile";
-import { hexStringToUint8Array, uint8ArrayToHexString } from "./utils/bytes.js";
+import { hexStringToUint8Array, uint8ArrayToHexString } from "./utils/bytes";
 import { get as getConfig, set as setConfig } from "./ConfigStorage";
 
 const EXTENSION_MIME_MAP = {
@@ -313,7 +313,9 @@ class FileSystem {
     // ---------------------------------------------------------------
 
     // `pickerId` groups related pickers (e.g. "firmware" vs "cli") so each
-    // remembers its own last-used folder instead of sharing one.
+    // remembers its own last-used folder instead of sharing one. Android has
+    // no equivalent: the Capacitor SAF plugin exposes no last-directory
+    // option, so `pickerId` is validated but otherwise ignored on that platform.
     async pickSaveFile(suggestedName, description, extension, pickerId) {
         assertValidPickerId(pickerId);
 
@@ -397,7 +399,16 @@ class FileSystem {
     // ---------------------------------------------------------------
 
     // `pickerId` groups related pickers (e.g. "firmware" vs "cli") so each
-    // remembers its own last-used folder instead of sharing one.
+    // remembers its own last-used folder instead of sharing one. Android has
+    // no equivalent: the Capacitor SAF plugin exposes no last-directory
+    // option, so `pickerId` is validated but otherwise ignored on that platform.
+    /**
+     * @typedef {object} PickedFile
+     * @property {string} name
+     * @property {unknown} [_fileHandle] web/Android handle, consumed by readFileAsBlob
+     * @property {Blob} [_blob] set only by the <input> fallback path
+     */
+    /** @returns {Promise<PickedFile | null | undefined>} null/undefined when cancelled or denied */
     async pickOpenFile(description, extension, pickerId) {
         assertValidPickerId(pickerId);
 

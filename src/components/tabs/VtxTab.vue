@@ -155,7 +155,12 @@
                 >
                     <div class="flex flex-col gap-2">
                         <SettingRow :label="$t('vtxProtocol')" :help="$t('vtxProtocolHelp')">
-                            <USelect v-model="vtxProtocol" :items="vtxProtocolOptions" class="w-36" />
+                            <USelect
+                                :model-value="vtxProtocol ?? undefined"
+                                @update:model-value="(v: string) => (vtxProtocol = v)"
+                                :items="vtxProtocolOptions"
+                                class="w-36"
+                            />
                         </SettingRow>
 
                         <SettingRow
@@ -164,7 +169,7 @@
                         >
                             <USelect
                                 :model-value="vtxPortShown"
-                                @update:model-value="(v) => (vtxPortIdentifier = v)"
+                                @update:model-value="(v: number) => (vtxPortIdentifier = v)"
                                 :items="vtxPortOptions"
                                 :disabled="!vtxPortWritable || vtxPortFollowsOsd"
                                 class="min-w-40"
@@ -405,7 +410,7 @@
     </BaseTab>
 </template>
 
-<script>
+<script lang="ts">
 import { defineComponent, onMounted, computed } from "vue";
 import BaseTab from "./BaseTab.vue";
 import WikiButton from "../elements/WikiButton.vue";
@@ -418,6 +423,7 @@ import { useVtx } from "../../composables/useVtx";
 import { useInterval } from "../../composables/useInterval";
 import { useSaving } from "../../composables/useSaving";
 import { useFeaturePort } from "@/composables/ports/useFeaturePort";
+import { usePortConflicts } from "@/composables/ports/usePortConflicts";
 import { PORT_NONE } from "@/composables/ports/portNames";
 import { useTranslation } from "i18next-vue";
 
@@ -477,6 +483,7 @@ export default defineComponent({
             options: vtxPortOptions,
             selectedIdentifier: vtxPortIdentifier,
             changed: vtxPortChanged,
+            conflict: vtxPortConflict,
             load: loadVtxPort,
             write: writeVtxPort,
             selectedProtocol: vtxProtocol,
@@ -485,6 +492,8 @@ export default defineComponent({
             setting: "vtx_uart",
             protocol: { setting: "vtx_type" },
         });
+
+        const { confirmPortConflicts } = usePortConflicts(() => [vtxPortConflict]);
 
         // An MSP VTX answers on the goggles' MSP link rather than a port of its own, so the
         // firmware falls back to the OSD's UART and the row follows the OSD tab, read-only.
@@ -578,6 +587,12 @@ export default defineComponent({
 
         const handleSave = () =>
             runSave(async () => {
+                // Warn before a pick that would take a port from another feature; a cancel here
+                // leaves the save untouched, before anything has been written to the FC.
+                if (!(await confirmPortConflicts())) {
+                    return;
+                }
+
                 await saveVtx(writeVtxPort);
                 await loadVtxConfig();
                 await loadVtxPort();
@@ -586,8 +601,8 @@ export default defineComponent({
 
         // --- VTX Table count setters (with change tracking) ---
 
-        function setTableBands(value) {
-            const count = Math.min(MAX_BAND_VALUES, Math.max(0, Number.parseInt(value) || 0));
+        function setTableBands(value: number | null) {
+            const count = Math.min(MAX_BAND_VALUES, Math.max(0, Number.parseInt(String(value)) || 0));
             vtxConfig.vtx_table_bands = count;
             for (let i = 1; i <= count; i++) {
                 ensureBandExists(i);
@@ -596,8 +611,8 @@ export default defineComponent({
             onVtxTableChange();
         }
 
-        function setTableChannels(value) {
-            const count = Math.min(MAX_BAND_CHANNELS_VALUES, Math.max(0, Number.parseInt(value) || 0));
+        function setTableChannels(value: number | null) {
+            const count = Math.min(MAX_BAND_CHANNELS_VALUES, Math.max(0, Number.parseInt(String(value)) || 0));
             vtxConfig.vtx_table_channels = count;
             for (let i = 1; i <= vtxConfig.vtx_table_bands; i++) {
                 ensureBandExists(i);
@@ -606,8 +621,8 @@ export default defineComponent({
             onVtxTableChange();
         }
 
-        function setTablePowerLevels(value) {
-            const count = Math.min(MAX_POWERLEVEL_VALUES, Math.max(0, Number.parseInt(value) || 0));
+        function setTablePowerLevels(value: number | null) {
+            const count = Math.min(MAX_POWERLEVEL_VALUES, Math.max(0, Number.parseInt(String(value)) || 0));
             vtxConfig.vtx_table_powerlevels = count;
             for (let i = 1; i <= count; i++) {
                 ensurePowerLevelExists(i);
@@ -617,7 +632,7 @@ export default defineComponent({
 
         // --- Band table accessors ---
 
-        function ensureBandExists(bandIdx) {
+        function ensureBandExists(bandIdx: number) {
             const idx = bandIdx - 1;
             if (!bandList[idx]) {
                 bandList[idx] = {
@@ -630,60 +645,60 @@ export default defineComponent({
             }
         }
 
-        function ensureBandFrequencies(bandIdx, channelCount) {
+        function ensureBandFrequencies(bandIdx: number, channelCount: number) {
             const freqs = bandList[bandIdx - 1].vtxtable_band_frequencies;
             while (freqs.length < channelCount) {
                 freqs.push(0);
             }
         }
 
-        function getBandName(bandIdx) {
+        function getBandName(bandIdx: number) {
             return bandList[bandIdx - 1]?.vtxtable_band_name ?? "";
         }
 
-        function setBandName(bandIdx, value) {
+        function setBandName(bandIdx: number, value: string) {
             ensureBandExists(bandIdx);
             bandList[bandIdx - 1].vtxtable_band_name = value;
             onVtxTableChange();
         }
 
-        function getBandLetter(bandIdx) {
+        function getBandLetter(bandIdx: number) {
             return bandList[bandIdx - 1]?.vtxtable_band_letter ?? "";
         }
 
-        function setBandLetter(bandIdx, value) {
+        function setBandLetter(bandIdx: number, value: string) {
             ensureBandExists(bandIdx);
             bandList[bandIdx - 1].vtxtable_band_letter = value;
             onVtxTableChange();
         }
 
-        function getBandFactory(bandIdx) {
+        function getBandFactory(bandIdx: number) {
             return bandList[bandIdx - 1]?.vtxtable_band_is_factory_band ?? false;
         }
 
-        function setBandFactory(bandIdx, value) {
+        function setBandFactory(bandIdx: number, value: boolean) {
             ensureBandExists(bandIdx);
             bandList[bandIdx - 1].vtxtable_band_is_factory_band = value;
             onVtxTableChange();
         }
 
-        function getBandChannelFreq(bandIdx, chIdx) {
+        function getBandChannelFreq(bandIdx: number, chIdx: number) {
             return bandList[bandIdx - 1]?.vtxtable_band_frequencies?.[chIdx - 1] ?? 0;
         }
 
-        function setBandChannelFreq(bandIdx, chIdx, value) {
+        function setBandChannelFreq(bandIdx: number, chIdx: number, value: number | null) {
             ensureBandExists(bandIdx);
             const freqs = bandList[bandIdx - 1].vtxtable_band_frequencies;
             while (freqs.length < chIdx) {
                 freqs.push(0);
             }
-            freqs[chIdx - 1] = Number.parseInt(value) || 0;
+            freqs[chIdx - 1] = Number.parseInt(String(value)) || 0;
             onVtxTableChange();
         }
 
         // --- Power level table accessors ---
 
-        function ensurePowerLevelExists(idx) {
+        function ensurePowerLevelExists(idx: number) {
             const i = idx - 1;
             if (!powerLevelList[i]) {
                 powerLevelList[i] = {
@@ -694,21 +709,21 @@ export default defineComponent({
             }
         }
 
-        function getPowerLevelValue(idx) {
+        function getPowerLevelValue(idx: number) {
             return powerLevelList[idx - 1]?.vtxtable_powerlevel_value ?? 0;
         }
 
-        function setPowerLevelValue(idx, value) {
+        function setPowerLevelValue(idx: number, value: number | null) {
             ensurePowerLevelExists(idx);
-            powerLevelList[idx - 1].vtxtable_powerlevel_value = Number.parseInt(value) || 0;
+            powerLevelList[idx - 1].vtxtable_powerlevel_value = Number.parseInt(String(value)) || 0;
             onVtxTableChange();
         }
 
-        function getPowerLevelLabel(idx) {
+        function getPowerLevelLabel(idx: number) {
             return powerLevelList[idx - 1]?.vtxtable_powerlevel_label ?? "";
         }
 
-        function setPowerLevelLabel(idx, value) {
+        function setPowerLevelLabel(idx: number, value: string) {
             ensurePowerLevelExists(idx);
             powerLevelList[idx - 1].vtxtable_powerlevel_label = value;
             onVtxTableChange();

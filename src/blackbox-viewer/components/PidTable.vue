@@ -38,16 +38,30 @@
     </UTable>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
+import type { PropType } from "vue";
+
+type PidValue = string | number | null;
+
+interface PidRow {
+    label: string;
+    p?: PidValue;
+    i?: PidValue;
+    d?: PidValue;
+    dMax?: PidValue;
+    f?: PidValue;
+    s?: PidValue;
+    missing?: boolean;
+}
 
 const props = defineProps({
-    rows: { type: Array, required: true },
+    rows: { type: Array as PropType<PidRow[]>, required: true },
     showDMax: { type: Boolean, default: false },
     srOnly: { type: Boolean, default: false },
 });
 
-function fmtPid(val) {
+function fmtPid(val: PidValue | undefined) {
     if (val == null) {
         return "-";
     }
@@ -68,18 +82,29 @@ const columns = computed(() => {
         cols.push({ accessorKey: "_spacer", header: "" });
     }
     cols.push({ accessorKey: "f", header: "FF" });
+    if (showWingSterm.value) {
+        cols.push({ accessorKey: "s", header: "S" });
+    }
     return cols;
 });
 
+const showWingSterm = computed(() => props.rows.slice(0, 3).some((row) => row.s !== undefined));
+
 const data = computed(() =>
-    props.rows.map((row) => ({
-        ...row,
-        p: fmtPid(row.p),
-        i: fmtPid(row.i),
-        d: fmtPid(row.d),
-        dMax: fmtPid(row.dMax),
-        f: fmtPid(row.f),
-        _spacer: "",
-    })),
+    props.rows.map((row) => {
+        const params = {
+            ...row,
+            p: fmtPid(row.p),
+            i: fmtPid(row.i),
+            d: fmtPid(row.d),
+            dMax: fmtPid(row.dMax),
+            f: fmtPid(row.f),
+            _spacer: "",
+        };
+        if (showWingSterm.value) {
+            params.s = fmtPid(row.s);
+        }
+        return params;
+    }),
 );
 </script>

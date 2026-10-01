@@ -23,7 +23,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../src/composables/useDialog", () => ({ useDialog: () => ({}) }));
 vi.mock("../../src/js/ConfigStorage", () => ({ get: () => ({}) }));
 vi.mock("../../src/js/ConfigInserter", () => ({ default: {} }));
-vi.mock("../../src/js/Analytics", () => ({ tracking: { sendEvent: vi.fn(), EVENT_CATEGORIES: {} } }));
+vi.mock("../../src/js/Analytics", () => ({ getTracking: () => ({ sendEvent: vi.fn(), EVENT_CATEGORIES: {} }) }));
 vi.mock("../../src/js/workers/hex_parser", () => ({ default: vi.fn() }));
 vi.mock("../../src/js/protocols/esp32", () => ({ default: {} }));
 vi.mock("../../src/js/device_handler", () => ({ default: {} }));
@@ -47,7 +47,7 @@ describe("firmware flasher device removal", () => {
         const onBoardChange = vi.fn();
         const clearBufferedFirmware = vi.fn();
         const updateDfuExitButtonState = vi.fn();
-        const flasher = useFirmwareFlashing();
+        const flasher = useFirmwareFlashing({});
         const { onDeviceRemoved } = flasher.setupFlashingEventListeners({
             onBoardChange,
             clearBufferedFirmware,
@@ -66,7 +66,7 @@ describe("firmware flasher device removal", () => {
         const onBoardChange = vi.fn(() => Promise.resolve());
         const clearBufferedFirmware = vi.fn();
         const updateDfuExitButtonState = vi.fn();
-        const flasher = useFirmwareFlashing();
+        const flasher = useFirmwareFlashing({});
         const { onDeviceRemoved } = flasher.setupFlashingEventListeners({
             onBoardChange,
             clearBufferedFirmware,

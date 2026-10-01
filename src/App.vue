@@ -39,6 +39,7 @@
                 :packet-error="MSP.packet_error"
                 :cycle-time="FC.CONFIG.cycleTime"
                 :cpu-load="FC.CONFIG.cpuload"
+                :cpu-temperature="FC.CONFIG.cpuTemp"
                 :configurator-version="CONFIGURATOR.getDisplayVersion()"
                 :firmware-version="FC.CONFIG.flightControllerVersion"
                 :firmware-target="FC.CONFIG.hardwareName"
@@ -53,17 +54,17 @@
     </UApp>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { isAndroid, isTauriAndroid, isTauriIOS } from "@/js/utils/checkCompatibility.js";
 import { computed, nextTick, provide, reactive, ref, shallowRef, watch } from "vue";
 import { useMediaQuery } from "@vueuse/core";
 import ConnectButton from "./components/device-picker/ConnectButton.vue";
 import GlobalDialogs from "./components/dialogs/GlobalDialogs.vue";
 import Sidebar from "./components/sidebar/Sidebar.vue";
-import FCModule from "./js/fc.js";
-import MSPModule from "./js/msp.js";
+import FCModule from "./js/fc";
+import MSPModule from "./js/msp";
 import PortUsageModule from "./js/port_usage.js";
-import CONFIGURATORModule from "./js/data_storage.js";
+import CONFIGURATORModule from "./js/data_storage";
 import GUI from "./js/gui.js";
 import { i18n } from "./js/localization";
 import { useUiLocale } from "./composables/useUiLocale";
@@ -143,8 +144,8 @@ const topbarHidden = ref(false);
 let lastScrollTop = 0;
 const scrollThreshold = 6;
 
-function onContentScroll(event) {
-    const current = event.target.scrollTop;
+function onContentScroll(event: Event) {
+    const current = (event.target as HTMLElement).scrollTop;
     if (current <= 0) {
         topbarHidden.value = false;
         lastScrollTop = 0;

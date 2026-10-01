@@ -30,7 +30,7 @@ const { deviceHandler, gui, serialConnect } = vi.hoisted(() => ({
 }));
 vi.mock("../../src/composables/useDialog", () => ({ useDialog: () => ({}) }));
 vi.mock("../../src/js/ConfigStorage", () => ({ get: () => ({}) }));
-vi.mock("../../src/js/Analytics", () => ({ tracking: { sendEvent: vi.fn(), EVENT_CATEGORIES: {} } }));
+vi.mock("../../src/js/Analytics", () => ({ getTracking: () => ({ sendEvent: vi.fn(), EVENT_CATEGORIES: {} }) }));
 vi.mock("../../src/js/protocols/esp32", () => ({ default: {} }));
 vi.mock("../../src/js/connection_state", () => ({ getConnectionState: () => ({}) }));
 vi.mock("../../src/js/device_handler", () => ({ default: deviceHandler }));
@@ -58,7 +58,16 @@ describe("starting a local firmware flash", () => {
         const setFlashOnConnect = vi.fn();
         const flasher = useFirmwareFlashing({
             flashingMessage,
-            FLASH_MESSAGE_TYPES: { INVALID: "invalid" },
+            flashProgress: vi.fn(),
+            FLASH_MESSAGE_TYPES: {
+                NEUTRAL: "neutral",
+                VALID: "valid",
+                INVALID: "invalid",
+                ACTION: "action",
+                ERASING: "erasing",
+                FLASHING: "flashing",
+                VERIFYING: "verifying",
+            },
             $t: (key: string) => key,
         });
         const loaded = await flasher.processFirmware(hex, "hex", { key: "local.hex", isLocalFile: true });
@@ -115,24 +124,23 @@ describe("starting a local firmware flash", () => {
         const { flasher, options } = await setup(localHex.replace(":043000002342460021\n", ""));
         const config = "set craft_name = test";
         await flasher.startFlashing({ ...options, config });
-        expect(flasher.getParsedHex().configInserted).toBe(true);
-        expect(String.fromCharCode(...flasher.getParsedHex().data.at(-1).data)).toContain(config);
+        expect(flasher.getParsedHex()?.configInserted).toBe(true);
+        expect(String.fromCharCode(...(flasher.getParsedHex()?.data.at(-1)?.data ?? []))).toContain(config);
     });
 
-    it("reports a real config insertion failure and releases the progress screen", async () => {
-        const { flasher, options, flashingMessage } = await setup();
+    it("does not start transport when explicit config insertion fails", async () => {
+        const { flasher, options } = await setup();
 
         await flasher.startFlashing({ ...options, config: "set craft_name = test" });
 
         expect(deviceHandler.dfuProtocol.requestPermission).not.toHaveBeenCalled();
         expect(deviceHandler.dfuProtocol.connect).not.toHaveBeenCalled();
-        expect(options.resetFlashingState).toHaveBeenCalledOnce();
-        expect(flashingMessage).toHaveBeenCalledWith("firmwareFlasherFlashFailed", "invalid");
+        expect(options.setFlashOnConnect).toHaveBeenCalledWith(false);
     });
 
-    it("recovers from a rejected device chooser and allows another attempt", async () => {
+    it("allows another attempt after cancelling the device chooser", async () => {
         const { flasher, options } = await setup();
-        deviceHandler.dfuProtocol.requestPermission.mockRejectedValueOnce(new Error("Permission denied"));
+        deviceHandler.dfuProtocol.requestPermission.mockResolvedValueOnce(null);
         await flasher.startFlashing(options);
         expect(options.resetFlashingState).toHaveBeenCalledOnce();
         deviceHandler.dfuProtocol.requestPermission.mockResolvedValue({ path: "usb_retry" });

@@ -1726,8 +1726,8 @@
             }
         },
         "1.49.0": {
-            "commit": "f5fb2717b84b7bf186091771dc0f0487db9aa691",
-            "date": "2026-09-12",
+            "commit": "f583a0c46d666701f300cb4e023715f20853a7d5",
+            "date": "2026-09-25",
             "modes": {
                 "ACCELEROMETER": {
                     "fields": [0, 1, 2, 3, 4],
@@ -1770,7 +1770,7 @@
                     "dynamic": false
                 },
                 "AUTOPILOT_HEADING": {
-                    "fields": [0, 1, 2, 3],
+                    "fields": [0, 1, 2, 3, 4, 6, 7],
                     "dynamic": false
                 },
                 "AUTOPILOT_PID": {
@@ -1786,7 +1786,7 @@
                     "dynamic": false
                 },
                 "BATTERY": {
-                    "fields": [0, 1, 2, 3, 4, 5, 6, 7],
+                    "fields": [0, 1, 3, 4, 5, 6, 7],
                     "dynamic": false
                 },
                 "BLACKBOX_OUTPUT": {
@@ -1794,7 +1794,7 @@
                     "dynamic": false
                 },
                 "CHIRP": {
-                    "fields": [0, 1, 2, 3],
+                    "fields": [0, 1, 2, 3, 4, 5, 6, 7],
                     "dynamic": false
                 },
                 "CRSF_LINK_STATISTICS_DOWN": {
@@ -1818,7 +1818,7 @@
                     "dynamic": false
                 },
                 "CYCLETIME": {
-                    "fields": [0, 1],
+                    "fields": [0, 1, 2, 3],
                     "dynamic": false
                 },
                 "D_LPF": {
@@ -1826,6 +1826,10 @@
                     "dynamic": false
                 },
                 "D_MAX": {
+                    "fields": [0, 1, 2, 3],
+                    "dynamic": false
+                },
+                "DSHOT_RPM_ERRORS": {
                     "fields": [0, 1, 2, 3],
                     "dynamic": false
                 },
@@ -1889,6 +1893,10 @@
                     "fields": [0, 2, 6, 7],
                     "dynamic": false
                 },
+                "FLIGHT_PLAN": {
+                    "fields": [0, 1, 2],
+                    "dynamic": false
+                },
                 "FPORT": {
                     "fields": [0, 1, 2, 3],
                     "dynamic": false
@@ -1914,7 +1922,7 @@
                     "dynamic": false
                 },
                 "GPS_RESCUE_HEADING": {
-                    "fields": [0, 1, 2, 3, 4, 7],
+                    "fields": [0, 1, 2, 3, 4, 5],
                     "dynamic": false
                 },
                 "GPS_RESCUE_TRACKING": {
@@ -1945,8 +1953,12 @@
                     "fields": [0, 1, 2],
                     "dynamic": false
                 },
+                "LAUNCH": {
+                    "fields": [0, 1, 2, 3, 4, 5, 6],
+                    "dynamic": false
+                },
                 "LIDAR_TF": {
-                    "fields": [0, 1, 2, 3, 4, 5, 6, 7],
+                    "fields": [0, 1, 2, 3, 4],
                     "dynamic": false
                 },
                 "MAG_CALIB": {
@@ -2025,6 +2037,10 @@
                     "fields": [0],
                     "dynamic": false
                 },
+                "RPM_FILTER": {
+                    "fields": [0, 1, 2, 3, 4, 5, 6, 7],
+                    "dynamic": false
+                },
                 "RPM_LIMIT": {
                     "fields": [0, 1, 2, 3, 4, 5, 6, 7],
                     "dynamic": false
@@ -2046,7 +2062,11 @@
                     "dynamic": false
                 },
                 "RX_FRSKY_SPI": {
-                    "fields": [0, 1, 2, 3],
+                    "fields": [0, 1, 2],
+                    "dynamic": false
+                },
+                "RX_REDPINE_SPI": {
+                    "fields": [0, 1, 2, 3, 4, 5],
                     "dynamic": false
                 },
                 "RX_SFHSS_SPI": {
@@ -2061,12 +2081,20 @@
                     "fields": [0, 1, 2],
                     "dynamic": false
                 },
+                "RX_STATE_TIME": {
+                    "fields": [0, 1, 2],
+                    "dynamic": false
+                },
                 "RX_TIMING": {
                     "fields": [0, 1, 2, 3, 4, 5, 6, 7],
                     "dynamic": false
                 },
                 "S_TERM": {
                     "fields": [0, 1, 2, 3, 4, 5],
+                    "dynamic": false
+                },
+                "SAG_COMPENSATION": {
+                    "fields": [0, 1],
                     "dynamic": false
                 },
                 "SBUS": {
@@ -2105,8 +2133,16 @@
                     "fields": [0, 1, 2, 3, 4, 5],
                     "dynamic": false
                 },
+                "UPT1": {
+                    "fields": [0, 1, 2, 3, 4, 5, 6, 7],
+                    "dynamic": false
+                },
                 "USB": {
                     "fields": [0, 1],
+                    "dynamic": false
+                },
+                "VELOCITY_EST": {
+                    "fields": [0, 1, 2, 3, 4, 5, 6, 7],
                     "dynamic": false
                 },
                 "VTX_MSP": {
