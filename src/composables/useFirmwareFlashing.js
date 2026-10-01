@@ -260,6 +260,8 @@ export function useFirmwareFlashing(params = {}) {
 
     /**
      * Flash HEX firmware via selected port (DFU or Serial)
+     * @param {Object} options Firmware, transport options, and UI callbacks.
+     * @returns {Promise<void>} Resolves after transport startup or chooser cancellation.
      */
     const flashHexFirmware = async (options = {}) => {
         const {
@@ -288,7 +290,7 @@ export function useFirmwareFlashing(params = {}) {
             flashing_options.erase_chip = true;
         }
 
-        const port = DeviceHandler.devicePicker.selectedDevice;
+        const port = DeviceHandler.devicePicker?.selectedDevice ?? "";
         const isSerial = port.startsWith("serial") || port.startsWith("capacitor-");
         const isDFU = port.startsWith("usb");
 
@@ -298,7 +300,7 @@ export function useFirmwareFlashing(params = {}) {
             tracking.sendEvent(tracking.EVENT_CATEGORIES.FLASHING, "DFU Flashing", {
                 filename: filename || null,
             });
-            DeviceHandler.dfuProtocol.connect(port, firmware, flashing_options, resetFlashingState);
+            await DeviceHandler.dfuProtocol.connect(port, firmware, flashing_options, resetFlashingState);
         } else if (isSerial) {
             if (noRebootSequence) {
                 flashing_options.no_reboot = true;
@@ -319,15 +321,12 @@ export function useFirmwareFlashing(params = {}) {
         } else {
             console.log(`${logHead} No valid port detected, asking for permissions`);
 
-            DeviceHandler.dfuProtocol
-                .requestPermission()
-                .then((device) => {
-                    DeviceHandler.dfuProtocol.connect(device.path, firmware, flashing_options, resetFlashingState);
-                })
-                .catch((error) => {
-                    console.error("Permission request failed", error);
-                    resetFlashingState?.();
-                });
+            const device = await DeviceHandler.dfuProtocol.requestPermission();
+            if (!device?.path) {
+                resetFlashingState?.();
+                return;
+            }
+            await DeviceHandler.dfuProtocol.connect(device.path, firmware, flashing_options, resetFlashingState);
         }
     };
 
@@ -364,6 +363,8 @@ export function useFirmwareFlashing(params = {}) {
 
     /**
      * Executes the flashing sequence for HEX firmware, including optional config insertion
+     * @param {Object} options Configuration text, flash options, and UI callbacks.
+     * @returns {Promise<void>} Resolves after startup, restoring the UI on startup failure.
      */
     const startFlashing = async (options = {}) => {
         const {
@@ -392,7 +393,9 @@ export function useFirmwareFlashing(params = {}) {
         }
 
         try {
-            if (config && !parsedHexData.configInserted) {
+            // Local firmware uses an empty object when no separate board config
+            // is loaded. Do not attempt to overwrite its embedded defaults.
+            if (typeof config === "string" && config.trim() && !parsedHexData.configInserted) {
                 const configInserter = new ConfigInserter();
 
                 if (configInserter.insertConfig(parsedHexData, config)) {
@@ -417,6 +420,8 @@ export function useFirmwareFlashing(params = {}) {
             });
         } catch (e) {
             console.log(`${logHead} Flashing failed: ${e.message}`);
+            flashingMessage?.($t?.("firmwareFlasherFlashFailed", { error: e.message }), FLASH_MESSAGE_TYPES?.INVALID);
+            resetFlashingState?.();
         }
 
         setFlashOnConnect?.(false);

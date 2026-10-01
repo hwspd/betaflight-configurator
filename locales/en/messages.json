@@ -4805,6 +4805,9 @@
     "firmwareFlasherEsp32Failed": {
         "message": "ESP32 flashing failed: $1"
     },
+    "firmwareFlasherFlashFailed": {
+        "message": "Firmware flashing could not start: {{error}}"
+    },
     "firmwareFlasherEsp32NotSupported": {
         "message": "ESP32 flashing requires the browser (Web Serial) build"
     },
