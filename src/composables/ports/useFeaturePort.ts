@@ -42,6 +42,7 @@ import {
 import { unreportedSoftSerialIdentifiers } from "./softSerial";
 import { describeClaim } from "./portClaims";
 import { loadPortClaims } from "./usePortClaims";
+import { usePortDisplayName } from "./usePortDisplayName";
 
 export interface Option<T> {
     value: T;
@@ -68,6 +69,7 @@ export interface PortOptionsSettings {
     /** Ports the board has but the FC cannot open yet, listed after the reported ones and marked with `inactiveLabel`. */
     inactiveIdentifiers?: number[];
     inactiveLabel?: string;
+    getDisplayName?: (identifier: number) => string;
 }
 
 /**
@@ -84,12 +86,13 @@ export function buildPortOptions(
         describeClaim = (name) => name,
         inactiveIdentifiers = [],
         inactiveLabel = "inactive",
+        getDisplayName = (identifier) => getPortDisplayName(identifier, { ports }),
     }: PortOptionsSettings = {},
 ): Option<number>[] {
     const options: Option<number>[] = [{ value: PORT_NONE, label: noneLabel }];
 
     const label = (identifier: number, ...notes: string[]) => {
-        const displayName = getPortDisplayName(identifier);
+        const displayName = getDisplayName(identifier);
         const held = claims ? claimsOn(claims, identifier).map(describeClaim) : [];
         if (claims && !held.length && !notes.length) {
             notes.push(freeLabel);
@@ -109,7 +112,7 @@ export function buildPortOptions(
     }
 
     if (currentIdentifier !== PORT_NONE && !options.some((option) => option.value === currentIdentifier)) {
-        options.push({ value: currentIdentifier, label: getPortDisplayName(currentIdentifier) });
+        options.push({ value: currentIdentifier, label: getDisplayName(currentIdentifier) });
     }
 
     return options;
@@ -207,6 +210,7 @@ export function useFeaturePort({ setting, baud = null, protocol = null }: Featur
     const available = computed(() => apiSupported.value && supported.value);
     const writable = computed(() => available.value && isMspCliSupported());
 
+    const displayPortName = usePortDisplayName();
     const selectedIdentifier = ref(PORT_NONE);
     const assignedIdentifier = ref(PORT_NONE);
     const selectedBaud: Ref<string | null> = ref(null);
@@ -230,6 +234,7 @@ export function useFeaturePort({ setting, baud = null, protocol = null }: Featur
             describeClaim: (name) => describeClaim(name).label,
             inactiveIdentifiers: unreportedSoftSerialIdentifiers(fcStore.serialConfig?.ports),
             inactiveLabel: i18n.getMessage("portsPortInactive"),
+            getDisplayName: displayPortName,
         }),
     );
 
@@ -257,7 +262,7 @@ export function useFeaturePort({ setting, baud = null, protocol = null }: Featur
             return null;
         }
 
-        return { port: getPortDisplayName(selectedIdentifier.value), heldBy };
+        return { port: displayPortName(selectedIdentifier.value), heldBy };
     });
 
     // The pending assignment this feature would write, so a tab can catch two of its features

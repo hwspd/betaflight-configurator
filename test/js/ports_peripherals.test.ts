@@ -130,6 +130,18 @@ describe("usePeripherals", () => {
         ]);
     });
 
+    it("labels GD32 tiles from one while retaining raw CLI claim ownership", async () => {
+        FC.CONFIG.targetName = "GD32F460RG";
+        FC.SERIAL_CONFIG.ports = [port(50), port(51)];
+        cliSend.mockResolvedValue(["serial UART0: rx*", "serial UART1: gps"]);
+        const peripherals = usePeripherals();
+        await peripherals.load();
+        expect(peripherals.serialPorts.value).toEqual([
+            { identifier: 50, displayName: "UART1", inactiveReason: null, claims: [{ name: "rx", active: true }] },
+            { identifier: 51, displayName: "UART2", inactiveReason: null, claims: [{ name: "gps", active: false }] },
+        ]);
+    });
+
     it("tiles a soft serial port the FC cannot open, with the reason", async () => {
         FC.SERIAL_CONFIG.ports = [port(20)];
         cliSend.mockResolvedValue(["serial VCP: msp_1*", "serial SOFT1 (feature SOFTSERIAL off): vtx"]);

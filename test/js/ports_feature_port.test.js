@@ -36,6 +36,19 @@ describe("buildPortOptions", () => {
         expect(options().find((option) => option.value === 20).label).toBe("USB VCP (msp_1)");
     });
 
+    it("uses one-based labels but firmware names for claims on zero-based ports", () => {
+        const options = buildPortOptions([{ identifier: 50 }, { identifier: 51 }], {
+            claims: { UART0: ["rx"], UART1: ["gps"] },
+            currentIdentifier: 53,
+        });
+        expect(options).toEqual([
+            { value: PORT_NONE, label: "None" },
+            { value: 50, label: "UART1 (rx)" },
+            { value: 51, label: "UART2 (gps)" },
+            { value: 53, label: "UART4" },
+        ]);
+    });
+
     it("names the caller's own claim too", () => {
         expect(options().find((option) => option.value === 53).label).toBe("UART3 (rx)");
     });
@@ -183,6 +196,29 @@ describe("useFeaturePort", () => {
         expect(cliSend).toHaveBeenCalledWith("get rx_uart");
         expect(port.selectedIdentifier.value).toBe(51);
         expect(port.changed.value).toBe(false);
+    });
+
+    it("writes firmware UART0 when the user selects display UART1 on GD32", async () => {
+        FC.CONFIG.targetName = "GD32F460RG";
+        FC.SERIAL_CONFIG.ports = [{ identifier: 50 }, { identifier: 51 }];
+        replies["get rx_uart"] = ["rx_uart = UART1"];
+        replies.peripherals = ["serial UART0: gps*", "serial UART1: rx*"];
+        await port.load();
+        expect(port.selectedIdentifier.value).toBe(51);
+        expect(port.options.value.find((entry) => entry.value === 50).label).toBe("UART1 (portsClaimGps)");
+        port.selectedIdentifier.value = 50;
+        expect(port.conflict.value.port).toBe("UART1");
+        await port.write();
+        expect(cliSend).toHaveBeenCalledWith("set rx_uart = UART0");
+        expect(cliSend).not.toHaveBeenCalledWith("set rx_uart = UART1");
+    });
+
+    it("recomputes display names when switching from a zero-based to a one-based board", () => {
+        FC.CONFIG.targetName = "GD32F460RG";
+        FC.SERIAL_CONFIG.ports = [{ identifier: 51 }];
+        expect(port.options.value.find((entry) => entry.value === 51).label).toBe("UART2");
+        FC.CONFIG.targetName = "STM32H743";
+        expect(port.options.value.find((entry) => entry.value === 51).label).toBe("UART1");
     });
 
     it("resolves the port name against the ports this board reported", async () => {

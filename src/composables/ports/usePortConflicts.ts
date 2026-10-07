@@ -23,7 +23,8 @@ import { type MaybeRef, unref } from "vue";
 import { i18n } from "../../js/localization";
 import { isExpertModeEnabled } from "../../js/utils/isExpertModeEnabled";
 import { useDialog } from "../useDialog";
-import { PORT_NONE, getPortDisplayName } from "./portNames";
+import { PORT_NONE } from "./portNames";
+import { usePortDisplayName } from "./usePortDisplayName";
 
 /**
  * A port a feature is being moved onto that another feature already holds, as `useFeaturePort`
@@ -67,6 +68,7 @@ export function usePortConflicts(
     collectConflicts: () => PortConflict[];
 } {
     const { showYesNo } = useDialog();
+    const getPortDisplayName = usePortDisplayName();
 
     function collectConflicts(): PortConflict[] {
         const conflicts: PortConflict[] = [];

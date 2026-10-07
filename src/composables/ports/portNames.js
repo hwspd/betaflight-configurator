@@ -81,9 +81,22 @@ export function getPortCliName(identifier) {
 
 /**
  * @param {number} identifier
+ * @param {{ports?: readonly {identifier: number}[] | null, mcuName?: string | number, targetName?: string}} [context]
  * @returns {string}
  */
-export function getPortDisplayName(identifier) {
+export function getPortDisplayName(identifier, { ports = [], mcuName = "", targetName = "" } = {}) {
+    // New-format identifiers overlap across zero- and one-based MCU families. Keep
+    // sparse ports numbered by hardware, not by their position in the reported list.
+    const zeroBasedUarts =
+        identifier === 50 ||
+        ports?.some((port) => port.identifier === 50) ||
+        [mcuName, targetName].some((name) => /^(GD32|RP2040|RP2350|ESP32)/i.test(String(name)));
+    if (identifier >= 50 && identifier <= 65 && zeroBasedUarts) {
+        return `UART${identifier - 49}`;
+    }
+    if (identifier >= 70 && identifier <= 79) {
+        return `PIOUART${identifier - 69}`;
+    }
     return portDisplayNames[identifier] ?? portCliNames[identifier] ?? `UART (${identifier})`;
 }
 
