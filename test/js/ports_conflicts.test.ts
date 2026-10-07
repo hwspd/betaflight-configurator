@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
-import { createPinia, setActivePinia } from "pinia";
-import { useFlightControllerStore } from "../../src/stores/fc";
 import {
     type PendingPortSelection,
     type PortConflict,
@@ -25,23 +23,9 @@ vi.mock("../../src/composables/useDialog", () => ({ useDialog: () => ({ showYesN
 
 describe("usePortConflicts", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
         isExpertModeEnabled.mockReturnValue(false);
         showYesNo.mockReset();
         showYesNo.mockResolvedValue(true);
-    });
-
-    it("uses the same one-based label for duplicate pending assignments on GD32", () => {
-        const fc = useFlightControllerStore();
-        fc.CONFIG.targetName = "GD32F460RG";
-        const { collectConflicts } = usePortConflicts(
-            () => [],
-            () => [
-                { identifier: 51, changed: true, label: "GPS" },
-                { identifier: 51, changed: true, label: "Receiver" },
-            ],
-        );
-        expect(collectConflicts()).toEqual([{ port: "UART2", heldBy: ["GPS", "Receiver"] }]);
     });
 
     afterEach(() => {

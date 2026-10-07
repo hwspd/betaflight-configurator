@@ -26,7 +26,7 @@ import MSP from "../../js/msp";
 import MSPCodes from "../../js/msp/MSPCodes";
 import { mspHelper } from "../../js/msp/MSPHelper";
 import { useDirtyState } from "../useDirtyState";
-import { usePortDisplayName } from "./usePortDisplayName";
+import { getPortDisplayName as getPortName } from "./portNames";
 import type { SerialPort } from "@/stores/fc.types";
 import type { PortFunctionGroup, PortFunctionRule } from "./usePortsRules";
 
@@ -49,7 +49,6 @@ export interface PortRow {
 export type PortAnalyticsChanges = Record<string, string>;
 
 export function usePortsState(getRules: (group: PortFunctionGroup) => PortFunctionRule[]) {
-    const getPortName = usePortDisplayName();
     const ports = reactive<PortRow[]>([]);
     const analyticsChanges = reactive<PortAnalyticsChanges>({});
     const isLoading = ref(true);

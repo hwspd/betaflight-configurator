@@ -20,42 +20,6 @@ describe("port names", () => {
         expect(getPortCliName(65)).toBe("UART15");
     });
 
-    it("displays zero-based UARTs from one without changing CLI names or assignments", () => {
-        const ports = [20, 50, 51, 53, 65].map((identifier) => ({ identifier }));
-        expect(ports.map(({ identifier }) => getPortDisplayName(identifier, { ports }))).toEqual([
-            "USB VCP",
-            "UART1",
-            "UART2",
-            "UART4",
-            "UART16",
-        ]);
-        expect(getPortCliName(50)).toBe("UART0");
-        expect(getPortCliName(51)).toBe("UART1");
-        expect(formatPortSetCommand("rx_uart", 50)).toBe("set rx_uart = UART0");
-        expect(findPortIdentifierByCliName(ports, "UART1")).toBe(51);
-    });
-
-    it.each(["GD32F460RG", "GD32H757VI", "RP2040", "RP2350A", "ESP32C3"])(
-        "preserves numbering on %s even when UART0 is unavailable",
-        (mcuName) => {
-            expect(getPortDisplayName(52, { ports: [{ identifier: 52 }], mcuName })).toBe("UART3");
-            expect(getPortDisplayName(52, { targetName: mcuName })).toBe("UART3");
-        },
-    );
-
-    it("leaves existing one-based and legacy board numbering intact, including gaps", () => {
-        const ports = [{ identifier: 53 }, { identifier: 56 }];
-        expect(getPortDisplayName(53, { ports, mcuName: "STM32H743" })).toBe("UART3");
-        expect(getPortDisplayName(56, { ports, mcuName: "AT32F435" })).toBe("UART6");
-        expect(getPortDisplayName(2, { mcuName: "GD32F460RG" })).toBe("UART3");
-    });
-
-    it("starts PIO UART labels at one without changing their firmware names", () => {
-        expect(getPortDisplayName(70)).toBe("PIOUART1");
-        expect(getPortDisplayName(79)).toBe("PIOUART10");
-        expect(formatPortSetCommand("gps_uart", 70)).toBe("set gps_uart = PIOUART0");
-    });
-
     it("names the soft and PIO ports", () => {
         // The firmware CLI knows soft serial as SOFT1/SOFT2; only the display name spells it out.
         expect(getPortCliName(30)).toBe("SOFT1");

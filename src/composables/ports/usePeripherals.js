@@ -2,8 +2,7 @@ import { ref } from "vue";
 import FC from "../../js/fc";
 import { mspHelper } from "../../js/msp/MSPHelper";
 import { findCliError, isMspCliSupported, send as cliSend } from "../useMspCliSession";
-import { PORT_NONE, findPortIdentifierByCliName } from "./portNames";
-import { usePortDisplayName } from "./usePortDisplayName";
+import { PORT_NONE, findPortIdentifierByCliName, getPortDisplayName } from "./portNames";
 
 /**
  * Parses the firmware `peripherals` command output. One line per device:
@@ -135,7 +134,6 @@ function loadSerialPortInventory() {
 }
 
 export function usePeripherals() {
-    const getPortDisplayName = usePortDisplayName();
     const isLoading = ref(true);
     const supported = ref(false);
     /**
